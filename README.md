@@ -1,6 +1,7 @@
 Shortestpaths [COP4531 Fall 2013] [Programming Assignment 3] [December 2013]
 
 GENERAL USAGE NOTES
+
 ----------------------------
 
 - Compile using provided makefile.
