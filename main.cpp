@@ -20,10 +20,15 @@ struct CompareDistance {
         return node1.second > node2.second;
     }
 };
+
 //=====================================================================
 //======================== FUNCTION PROTOTYPES ========================
 //=====================================================================
 
+//* * * * * * * * * * * * * * 
+//* SUB-ROUTINES
+//* * * * * * * * * * * * * * 
+void PrintResultsToFile(map <string, int> &Dist, string source);
 //* * * * * * * * * * * * * * 
 //* SETTERS
 //* * * * * * * * * * * * * * 
@@ -131,10 +136,7 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	}
     }
     
-    map <string, int>::const_iterator itr;
-    for(itr = Dist.begin(); itr != Dist.end(); ++itr){
-      cout << itr->first << ": " << itr->second << endl;
-    }
+    PrintResultsToFile(Dist, source);
     
     //close input file
     newFile.close();
@@ -144,6 +146,22 @@ int main(int numberOfArguments, char* argumentValues[]) {
 //=====================================================================
 //======================== FUNCTION DEFINITIONS =======================
 //=====================================================================
+
+void PrintResultsToFile(map <string, int> &Dist, string source){
+    ofstream OUT;
+    OUT.open("out.txt");
+    if (OUT.is_open()) {
+	OUT << "Dijkstra\n";
+	OUT << "Source: " << source << endl;
+	map <string, int>::const_iterator itr;
+	for(itr = Dist.begin(); itr != Dist.end(); ++itr)
+	    OUT << "NODE " << itr->first << ": " << itr->second << endl;
+	OUT << "End Dijkstra\n";
+    } else {
+	  cout << "Error: could not write to out.txt.\n";
+    }
+    OUT.close();
+}
 
 void UpdateGraph(map <string, map <string, int> > &G, string u, string v, int w){
     map <string, map <string, int> >::const_iterator itr;
@@ -201,7 +219,6 @@ int GetWeight(map <string, map <string, int> > &G, string u, string v){
     map <string, map <string, int> >::const_iterator itr;
     itr = G.find(u);
     if(itr != G.end()) {
-	cout << "found " << u << " in graph\n";
 	map <string, int> temp = itr->second;
 	map <string, int>::const_iterator itr1;
 	itr1 = temp.find(v);
