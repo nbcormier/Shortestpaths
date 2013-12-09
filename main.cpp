@@ -16,17 +16,29 @@
 
 using namespace std;
 
-void UpdateGraph(map <string, map <string, int> > &G, string u, string v, int w);
-int GetWeight(map <string, map <string, int> > &G, string u, string v);
+#define INFINITY 99999999
 
-string source;
-bool secondPass = false;
-int nodes;
-int edges;
+struct comp {
+    bool operator() (const pair<string, int> &a, const pair<string, int> &b) {
+        return a.second > b.second;
+    }
+};
+
+void UpdateGraph(map <string, map <string, int> > &G, string u, string v, int w);
+void UpdateDist(map <string, int> &Dist, string node, int d);
+void UpdateFin(map <string, bool> &Fin, string node, bool status);
+int GetWeight(map <string, map <string, int> > &G, string u, string v);
+int GetDist(map <string, int> &Dist, string node);
+int GetFin(map <string, bool> &Fin, string node);
 
 //main routine
 int main(int numberOfArguments, char* argumentValues[]) {
     map <string, map <string, int> > Graph;
+    map <string, int> Dist;
+    map <string, bool> Fin;
+    string source = argumentValues[2];
+    int kDist = atoi(argumentValues[3]);
+    priority_queue< pair<string, int>, vector< pair<string, int> > , comp > Q;
 	//only executable + 3 arguments may be passed
 	int allowedNumArgs = 4;
 	if(numberOfArguments != allowedNumArgs) {
@@ -46,11 +58,6 @@ int main(int numberOfArguments, char* argumentValues[]) {
 		return 1;
     }
     
-    map <string, vector <string> > graph;
-    map <string, vector <string> > graphTrans;
-    map <string, string> sets;
-    vector <string> blackStack;
-    
 	//keep track of which line we're on
 	int lineCount = 0;
 	//track graph status
@@ -59,7 +66,7 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	//parse input file
 	string line, node1, node2;
 	int weight;
-	while (newFile.good()) {
+	while(newFile.good()) {
 		newFile >> node1;
 		if(node1[0] != '#') {
 		    lineCount++;
@@ -72,20 +79,13 @@ int main(int numberOfArguments, char* argumentValues[]) {
 			}
 			newFile >> node2;
 			newFile >> weight;
-			cout << weight + weight << endl;
 			UpdateGraph(Graph, node1, node2, weight);
-			if(DIRECTED){
-			  cout << "Directed graph:\n";
-			  cout << "Node1: " << node1 << "\n";
-			  cout << "Node2: " << node2 << "\n";
-			  cout << "Weight: " << weight << "\n";
-			} else {
-			  cout << "Undirected graph:\n";
-			  cout << "Node1: " << node1 << "\n";
-			  cout << "Node2: " << node2 << "\n";
-			  cout << "Weight: " << weight << "\n";
-			}
-			  
+			if(UNDIRECTED)
+			  UpdateGraph(Graph, node2, node1, weight);
+			UpdateDist(Dist, node1, INFINITY);
+			UpdateDist(Dist, node2, INFINITY);
+			UpdateFin(Fin, node1, false);
+			UpdateFin(Fin, node2, false);
 			if(newFile.eof())
 				break;
 		} else {
@@ -94,23 +94,42 @@ int main(int numberOfArguments, char* argumentValues[]) {
 		}
     }
     
-    int st = GetWeight(Graph, "y", "x");
-    cout << "Weight from s to t: " << st << endl;
+    UpdateDist(Dist, source, 0);
+    Q.push(pair<string, int>(source, 0));
     
-    std::priority_queue<int, std::vector<int>, std::greater<int> > mypq;
-
-  mypq.push(30);
-  mypq.push(100);
-  mypq.push(25);
-  mypq.push(40);
-
-  std::cout << "Popping out elements...";
-  while (!mypq.empty())
-  {
-     std::cout << ' ' << mypq.top();
-     mypq.pop();
-  }
-  std::cout << '\n';
+    //run Dijkstra
+    while(!Q.empty()){
+      string minNode = Q.top().first;
+      cout << "popping " << minNode << endl;
+      Q.pop();
+      if(GetFin(Fin, minNode) == true)
+	continue;
+      map <string, map <string, int> >::const_iterator itr;
+      itr = Graph.find(minNode);
+      if(itr == Graph.end()) {
+	  cout << "Error: Invalid source node. Terminating program." << endl;
+      } else {
+	      map <string, int> Adj = itr->second;
+	      map <string, int>::const_iterator itr1;
+	      for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
+		 string v = itr1->first;
+		 cout << "Checking " << v << endl;
+		 int w = itr1->second;
+		 int newDist = GetDist(Dist, minNode) + w;
+		 int currentDist = GetDist(Dist, v);
+		 if(GetFin(Fin, v) == false && ( newDist < currentDist ) ){
+		   UpdateDist(Dist, v, newDist);
+		   Q.push(pair<string, int>(v, newDist));
+		 }
+	      }
+	      UpdateFin(Fin, minNode, true);
+      }
+    }
+    
+    map <string, int>::const_iterator itr;
+    for(itr = Dist.begin(); itr != Dist.end(); ++itr){
+      cout << itr->first << ": " << itr->second << endl;
+    }
     
 	//close input file
     newFile.close();
@@ -129,6 +148,44 @@ void UpdateGraph(map <string, map <string, int> > &G, string u, string v, int w)
 	  temp.insert(pair<string, int> (v, w) );
 	  G[u] = temp;
   }
+}
+
+void UpdateDist(map <string, int> &Dist, string node, int d){
+	map <string, int>::const_iterator itr;
+	itr = Dist.find(node);
+	if(itr == Dist.end()) {
+		Dist.insert(pair<string, int> (node, d));
+	} else {
+		Dist[node] = d;
+	}
+}
+
+void UpdateFin(map <string, bool> &Fin, string node, bool status){
+	map <string, bool>::const_iterator itr;
+	itr = Fin.find(node);
+	if(itr == Fin.end()) {
+		Fin.insert(pair<string, bool> (node, status));
+	} else {
+		Fin[node] = status;
+	}
+}
+
+int GetDist(map <string, int> &Dist, string node){
+  map <string, int>::const_iterator itr;
+  itr = Dist.find(node);
+  if(itr != Dist.end())
+        return itr->second;
+  else
+	return 0;
+}
+
+int GetFin(map <string, bool> &Fin, string node){
+  map <string, bool>::const_iterator itr;
+  itr = Fin.find(node);
+  if(itr != Fin.end())
+        return itr->second;
+  else
+	return 0;
 }
 
 int GetWeight(map <string, map <string, int> > &G, string u, string v){
