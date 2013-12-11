@@ -175,7 +175,7 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	    int w = itr1->second;
 	    int newDist = GetDist(Dist, currentNode) + w;
 	    int currentDist = GetDist(Dist, v);
-	    if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
+	    if(newDist < currentDist && currentHops < kHops){
 	      UpdateHops(Hops, v, currentHops+1); // update memoization table
 	      UpdateDist(Dist, v, newDist);
 	    }
