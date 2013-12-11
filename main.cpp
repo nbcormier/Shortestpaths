@@ -152,32 +152,55 @@ int main(int numberOfArguments, char* argumentValues[]) {
     Q.push(pair<string, int>(source, 0));
     
     //run Dijkstra for Shortest Reliable Path
-    while(!Q.empty()){
-	string minNode = Q.top().first;
-	Q.pop();
+//     while(!Q.empty()){
+// 	string minNode = Q.top().first;
+// 	Q.pop();
+// 	if(GetFin(Fin, minNode) == true)
+// 	  continue;
+// 	map <string, map <string, int> >::const_iterator itr;
+// 	itr = Graph.find(minNode);
+// 	if(itr == Graph.end()) {
+// 	    cout << "Error: Invalid source node. Terminating program." << endl;
+// 	} else {
+// 	    map <string, int> Adj = itr->second;
+// 	    map <string, int>::const_iterator itr1;
+// 	    for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
+// 	        int currentHops = GetHops(Hops, minNode); // look up in memoization table
+// 		string v = itr1->first;
+// 		int w = itr1->second;
+// 		int newDist = GetDist(Dist, minNode) + w;
+// 		int currentDist = GetDist(Dist, v);
+// 		if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
+// 		  UpdateHops(Hops, v, currentHops+1); // update memoization table
+// 		  UpdateDist(Dist, v, newDist);
+// 		  Q.push(pair<string, int>(v, newDist));
+// 		}
+// 	    }
+// 	    UpdateFin(Fin, minNode, true);
+// 	}
+//     }
+    
+    //run Dijkstra for Shortest Reliable Path
+    map <string, map <string, int> >::const_iterator itr;
+    for(itr = Graph.begin(); itr != Graph.end(); ++itr){
+	string minNode = itr->first;
 	if(GetFin(Fin, minNode) == true)
 	  continue;
-	map <string, map <string, int> >::const_iterator itr;
-	itr = Graph.find(minNode);
-	if(itr == Graph.end()) {
-	    cout << "Error: Invalid source node. Terminating program." << endl;
-	} else {
-	    map <string, int> Adj = itr->second;
-	    map <string, int>::const_iterator itr1;
-	    for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
-	        int currentHops = GetHops(Hops, minNode); // look up in memoization table
-		string v = itr1->first;
-		int w = itr1->second;
-		int newDist = GetDist(Dist, minNode) + w;
-		int currentDist = GetDist(Dist, v);
-		if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
-		  UpdateHops(Hops, v, currentHops+1); // update memoization table
-		  UpdateDist(Dist, v, newDist);
-		  Q.push(pair<string, int>(v, newDist));
-		}
+	map <string, int> Adj = itr->second;
+	map <string, int>::const_iterator itr1;
+	for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
+	    int currentHops = GetHops(Hops, minNode); // look up in memoization table
+	    string v = itr1->first;
+	    int w = itr1->second;
+	    int newDist = GetDist(Dist, minNode) + w;
+	    int currentDist = GetDist(Dist, v);
+	    if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
+	      UpdateHops(Hops, v, currentHops+1); // update memoization table
+	      UpdateDist(Dist, v, newDist);
+	      Q.push(pair<string, int>(v, newDist));
 	    }
-	    UpdateFin(Fin, minNode, true);
 	}
+	UpdateFin(Fin, minNode, true);
     }
     
     map <string, int> ShortestPathResult = Dist; // store SRP result
