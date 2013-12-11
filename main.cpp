@@ -141,11 +141,12 @@ int main(int numberOfArguments, char* argumentValues[]) {
     
     map <string, int> DijkstraResult = Dist; // store Dijkstra results for later
     
-    //reset some of our data structures to prepare for Shortest Reliable Path
-    ResetDistAndFin(Dist, Fin);
-    Q = priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance >();
+    //prepare for Shortest Reliable Path
+    ResetDistAndFin(Dist, Fin); // reset distances and finish statuses
+    Q = priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance >(); // clear queue
     map <string, int> Hops; // memoization table
     
+    // re-initialize the source values
     UpdateDist(Dist, source, 0);
     UpdateHops(Hops, source, 0);
     Q.push(pair<string, int>(source, 0));
@@ -164,13 +165,13 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	    map <string, int> Adj = itr->second;
 	    map <string, int>::const_iterator itr1;
 	    for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
-	        int currentHops = GetHops(Hops, minNode);//temp
+	        int currentHops = GetHops(Hops, minNode); // look up in memoization table
 		string v = itr1->first;
 		int w = itr1->second;
 		int newDist = GetDist(Dist, minNode) + w;
 		int currentDist = GetDist(Dist, v);
 		if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
-		  UpdateHops(Hops, v, currentHops+1);//temp
+		  UpdateHops(Hops, v, currentHops+1); // update memoization table
 		  UpdateDist(Dist, v, newDist);
 		  Q.push(pair<string, int>(v, newDist));
 		}
