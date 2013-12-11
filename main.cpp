@@ -143,73 +143,43 @@ int main(int numberOfArguments, char* argumentValues[]) {
     
     //prepare for Shortest Reliable Path
     ResetDistAndFin(Dist, Fin); // reset distances and finish statuses
-    Q = priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance >(); // clear queue
     map <string, int> Hops; // memoization table
     
     // re-initialize the source values
     UpdateDist(Dist, source, 0);
     UpdateHops(Hops, source, 0);
-    Q.push(pair<string, int>(source, 0));
     
-    //run Dijkstra for Shortest Reliable Path
-//     while(!Q.empty()){
-// 	string minNode = Q.top().first;
-// 	Q.pop();
-// 	if(GetFin(Fin, minNode) == true)
-// 	  continue;
-// 	map <string, map <string, int> >::const_iterator itr;
-// 	itr = Graph.find(minNode);
-// 	if(itr == Graph.end()) {
-// 	    cout << "Error: Invalid source node. Terminating program." << endl;
-// 	} else {
-// 	    map <string, int> Adj = itr->second;
-// 	    map <string, int>::const_iterator itr1;
-// 	    for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
-// 	        int currentHops = GetHops(Hops, minNode); // look up in memoization table
-// 		string v = itr1->first;
-// 		int w = itr1->second;
-// 		int newDist = GetDist(Dist, minNode) + w;
-// 		int currentDist = GetDist(Dist, v);
-// 		if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
-// 		  UpdateHops(Hops, v, currentHops+1); // update memoization table
-// 		  UpdateDist(Dist, v, newDist);
-// 		  Q.push(pair<string, int>(v, newDist));
-// 		}
-// 	    }
-// 	    UpdateFin(Fin, minNode, true);
-// 	}
-//     }
-    
-    //run Dijkstra for Shortest Reliable Path
+    // run Dijkstra for Shortest Reliable Path
     map <string, map <string, int> >::const_iterator itr;
     bool firstRunFinished = false;
     while(itr != Graph.find(source)){
 	if(!firstRunFinished){
+	  // start from source on first run
 	  itr = Graph.find(source);
+	  // update for subsequent runs
 	  firstRunFinished = true;
 	}
-	if(itr == Graph.end())
+	// if we get to the end, continue looping from beginning
+	if(itr == Graph.end()){
 	    itr = Graph.begin();
-//     for(itr = Graph.begin(); itr != Graph.end(); ++itr){
-	string minNode = itr->first;
-	if(GetFin(Fin, minNode) == true)
-	  continue;
+	    // if we originally started from the beginning, we are done
+	    if(itr == Graph.find(source))
+	      break;
+	}
+	string currentNode = itr->first;
 	map <string, int> Adj = itr->second;
 	map <string, int>::const_iterator itr1;
 	for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
-	    int currentHops = GetHops(Hops, minNode); // look up in memoization table
+	    int currentHops = GetHops(Hops, currentNode); // look up in memoization table
 	    string v = itr1->first;
-	    cout << "Visiting " << v << " from " << minNode << endl;
 	    int w = itr1->second;
-	    int newDist = GetDist(Dist, minNode) + w;
+	    int newDist = GetDist(Dist, currentNode) + w;
 	    int currentDist = GetDist(Dist, v);
 	    if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
 	      UpdateHops(Hops, v, currentHops+1); // update memoization table
 	      UpdateDist(Dist, v, newDist);
-	      Q.push(pair<string, int>(v, newDist));
 	    }
 	}
-	UpdateFin(Fin, minNode, true);
 	++itr;
     }
     
