@@ -53,8 +53,6 @@ int main(int numberOfArguments, char* argumentValues[]) {
     map <string, map <string, int> > Graph; // input graph representation (adj list)
     map <string, int> Dist; // nodes: final distances
     map <string, bool> Fin; // nodes: finish status
-    string source = argumentValues[2]; // pull 2nd command line argument
-    int kHops = atoi(argumentValues[3]); // pull 3rd command line argument
     //priority  queue using our custom comparison operator
     priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance > Q;
     int allowedNumArgs = 4; // only executable + 3 arguments may be passed
@@ -63,6 +61,8 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	cout << argumentValues[0] << " <input file> <source node> <k weight>\n";
 	return 1;
     }
+    string source = argumentValues[2]; // pull 2nd command line argument
+    int kHops = atoi(argumentValues[3]); // pull 3rd command line argument
     ifstream newFile;
     //attempt to open input file
     newFile.open(argumentValues[1]);
@@ -182,7 +182,15 @@ int main(int numberOfArguments, char* argumentValues[]) {
     
     //run Dijkstra for Shortest Reliable Path
     map <string, map <string, int> >::const_iterator itr;
-    for(itr = Graph.begin(); itr != Graph.end(); ++itr){
+    bool firstRunFinished = false;
+    while(itr != Graph.find(source)){
+	if(!firstRunFinished){
+	  itr = Graph.find(source);
+	  firstRunFinished = true;
+	}
+	if(itr == Graph.end())
+	    itr = Graph.begin();
+//     for(itr = Graph.begin(); itr != Graph.end(); ++itr){
 	string minNode = itr->first;
 	if(GetFin(Fin, minNode) == true)
 	  continue;
@@ -191,6 +199,7 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
 	    int currentHops = GetHops(Hops, minNode); // look up in memoization table
 	    string v = itr1->first;
+	    cout << "Visiting " << v << " from " << minNode << endl;
 	    int w = itr1->second;
 	    int newDist = GetDist(Dist, minNode) + w;
 	    int currentDist = GetDist(Dist, v);
@@ -201,6 +210,7 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	    }
 	}
 	UpdateFin(Fin, minNode, true);
+	++itr;
     }
     
     map <string, int> ShortestPathResult = Dist; // store SRP result
