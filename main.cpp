@@ -28,19 +28,22 @@ struct CompareDistance {
 //* * * * * * * * * * * * * * 
 //* SUB-ROUTINES
 //* * * * * * * * * * * * * * 
-void PrintResultsToFile(map <string, int> &Dist, string source);
+void PrintResultsToFile(map <string, int> &DijkstraResult, map <string, int> &ShortestPathResult, string source, int kHops);
 //* * * * * * * * * * * * * * 
 //* SETTERS
 //* * * * * * * * * * * * * * 
 void UpdateGraph(map <string, map <string, int> > &G, string u, string v, int w);
 void UpdateDist(map <string, int> &Dist, string node, int d);
 void UpdateFin(map <string, bool> &Fin, string node, bool status);
+void UpdateHops(map <string, int> &Hops, string node, int i);
+void ResetDistAndFin(map <string, int> &Dist, map <string, bool> &Fin);
 //* * * * * * * * * * * * * * 
 //* GETTERS
 //* * * * * * * * * * * * * * 
 int GetWeight(map <string, map <string, int> > &G, string u, string v);
 int GetDist(map <string, int> &Dist, string node);
 int GetFin(map <string, bool> &Fin, string node);
+int GetHops(map <string, int> &Hops, string node);
 
 //=====================================================================
 //======================== MAIN ROUTINE ===============================
@@ -51,14 +54,14 @@ int main(int numberOfArguments, char* argumentValues[]) {
     map <string, int> Dist; // nodes: final distances
     map <string, bool> Fin; // nodes: finish status
     string source = argumentValues[2]; // pull 2nd command line argument
-    int kDist = atoi(argumentValues[3]); // pull 3rd command line argument
-    //a complicated priority queue
+    int kHops = atoi(argumentValues[3]); // pull 3rd command line argument
+    //priority  queue using our custom comparison operator
     priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance > Q;
     int allowedNumArgs = 4; // only executable + 3 arguments may be passed
     if(numberOfArguments != allowedNumArgs) {
-	    cout << "Program usage:\n";
-	    cout << argumentValues[0] << " <input file> <source node> <k weight>\n";
-	    return 1;
+	cout << "program usage:\n";
+	cout << argumentValues[0] << " <input file> <source node> <k weight>\n";
+	return 1;
     }
     ifstream newFile;
     //attempt to open input file
@@ -136,7 +139,49 @@ int main(int numberOfArguments, char* argumentValues[]) {
 	}
     }
     
-    PrintResultsToFile(Dist, source);
+    map <string, int> DijkstraResult = Dist; // store Dijkstra results for later
+    
+    //reset some of our data structures to prepare for Shortest Reliable Path
+    ResetDistAndFin(Dist, Fin);
+    Q = priority_queue< pair<string, int>, vector< pair<string, int> > , CompareDistance >();
+    map <string, int> Hops; // memoization table
+    
+    UpdateDist(Dist, source, 0);
+    UpdateHops(Hops, source, 0);
+    Q.push(pair<string, int>(source, 0));
+    
+    //run Dijkstra for Shortest Reliable Path
+    while(!Q.empty()){
+	string minNode = Q.top().first;
+	Q.pop();
+	if(GetFin(Fin, minNode) == true)
+	  continue;
+	map <string, map <string, int> >::const_iterator itr;
+	itr = Graph.find(minNode);
+	if(itr == Graph.end()) {
+	    cout << "Error: Invalid source node. Terminating program." << endl;
+	} else {
+	    map <string, int> Adj = itr->second;
+	    map <string, int>::const_iterator itr1;
+	    for(itr1 = Adj.begin(); itr1!=Adj.end(); ++itr1){
+	        int currentHops = GetHops(Hops, minNode);//temp
+		string v = itr1->first;
+		int w = itr1->second;
+		int newDist = GetDist(Dist, minNode) + w;
+		int currentDist = GetDist(Dist, v);
+		if(GetFin(Fin, v) == false && ( newDist < currentDist ) && currentHops < kHops){
+		  UpdateHops(Hops, v, currentHops+1);//temp
+		  UpdateDist(Dist, v, newDist);
+		  Q.push(pair<string, int>(v, newDist));
+		}
+	    }
+	    UpdateFin(Fin, minNode, true);
+	}
+    }
+    
+    map <string, int> ShortestPathResult = Dist; // store SRP result
+    
+    PrintResultsToFile(DijkstraResult, ShortestPathResult, source, kHops);
     
     //close input file
     newFile.close();
@@ -147,16 +192,32 @@ int main(int numberOfArguments, char* argumentValues[]) {
 //======================== FUNCTION DEFINITIONS =======================
 //=====================================================================
 
-void PrintResultsToFile(map <string, int> &Dist, string source){
+void PrintResultsToFile(map <string, int> &DijkstraResult, map <string, int> &ShortestPathResult, string source, int kHops){
     ofstream OUT;
     OUT.open("out.txt");
     if (OUT.is_open()) {
+        // Dijkstra output
 	OUT << "Dijkstra\n";
 	OUT << "Source: " << source << endl;
 	map <string, int>::const_iterator itr;
-	for(itr = Dist.begin(); itr != Dist.end(); ++itr)
+	for(itr = DijkstraResult.begin(); itr != DijkstraResult.end(); ++itr)
 	    OUT << "NODE " << itr->first << ": " << itr->second << endl;
 	OUT << "End Dijkstra\n";
+	
+	//put a space in between the two outputs
+	OUT << endl;
+	
+	// Shortest Reliable Path output
+	OUT << "Shortest Reliable Paths Algorithm\n";
+	OUT << "Integer k: " << kHops << " Source: " << source << endl;
+	for(itr = ShortestPathResult.begin(); itr != ShortestPathResult.end(); ++itr){
+	    if(itr->second == INFINITY)
+		OUT << "NODE " << itr->first << ": unreachable in " << kHops << " hops\n";
+	    else
+		OUT << "NODE " << itr->first << ": " << itr->second << endl;
+	}
+	OUT << "End Shortest Reliable Paths Algorithm\n";
+	
     } else {
 	  cout << "Error: could not write to out.txt.\n";
     }
@@ -197,6 +258,25 @@ void UpdateFin(map <string, bool> &Fin, string node, bool status){
 	}
 }
 
+void UpdateHops(map <string, int> &Hops, string node, int i){
+    map <string, int>::const_iterator itr;
+    itr = Hops.find(node);
+    if(itr == Hops.end()) {
+	Hops.insert(pair<string, int> (node, i));
+    } else {
+	  Hops[node] = i;
+    }
+}
+
+void ResetDistAndFin(map <string, int> &Dist, map <string, bool> &Fin){
+    map <string, int>::const_iterator itr;
+    for(itr = Dist.begin(); itr != Dist.end(); ++itr)
+	 Dist[itr->first] = INFINITY;
+    map <string, bool>::const_iterator itr1;
+    for(itr1 = Fin.begin(); itr1 != Fin.end(); ++itr1)
+	 Fin[itr1->first] = false;
+}
+
 int GetDist(map <string, int> &Dist, string node){
     map <string, int>::const_iterator itr;
     itr = Dist.find(node);
@@ -227,6 +307,15 @@ int GetWeight(map <string, map <string, int> > &G, string u, string v){
 	}
     }
     return 0;
+}
+
+int GetHops(map <string, int> &Hops, string node){
+    map <string, int>::const_iterator itr;
+    itr = Hops.find(node);
+    if(itr != Hops.end())
+	return itr->second;
+    else
+	return -1;//not in memoization table
 }
 
 //=====================================================================
